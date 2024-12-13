@@ -6,20 +6,6 @@ local cr = "\13"
 
 local common = {}
 
-
----@param table table table of strings
----@param substring string
---- Checks in any sting in the table contains the substring
-local contains = function(table, substring)
-  for _, v in ipairs(table) do
-    if string.find(v, substring) then
-      return true
-    end
-  end
-  return false
-end
-
-
 ---@param lines table
 -- Removes empty lines. On unix this includes lines only with whitespaces.
 local function remove_empty_lines(lines)
@@ -96,9 +82,6 @@ end
 -- the return carriage added"
 common.bracketed_paste_python = function(lines, extras)
   local result = {}
-  local cmd = extras["command"]
-  local is_ipython = contains(cmd, "ipython")
-
   lines = remove_empty_lines(lines)
 
   local indent_open = false
@@ -109,7 +92,39 @@ common.bracketed_paste_python = function(lines, extras)
 
     table.insert(result, line)
 
-    if is_windows() and not is_ipython or not is_windows() then
+    if i < #lines and indent_open and string.match(lines[i + 1], "^%s") == nil then
+      if not python_close_indent_exceptions(lines[i + 1]) then
+          indent_open = false
+          table.insert(result, cr)
+        end
+      end
+    end
+  end
+if is_windows() then
+    table.insert(result, "\r\n")
+  else
+    table.insert(result, cr)
+  end
+
+  return result
+end
+  
+--- @param lines table  "each item of the table is a new line to send to the repl"
+--- @return table  "returns the table of lines to be sent the the repl with
+-- the return carriage added"
+common.bracketed_paste_ipython = function(lines, extras)
+  local result = {}
+  lines = remove_empty_lines(lines)
+
+  local indent_open = false
+  for i, line in ipairs(lines) do
+    if string.match(line, "^%s") ~= nil then
+      indent_open = true
+    end
+
+    table.insert(result, line)
+
+    if not is_windows() then
       if i < #lines and indent_open and string.match(lines[i + 1], "^%s") == nil then
         if not python_close_indent_exceptions(lines[i + 1]) then
           indent_open = false
