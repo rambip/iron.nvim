@@ -99,8 +99,8 @@ common.bracketed_paste_python = function(lines, extras)
         end
       end
     end
-  end
-if is_windows() then
+
+  if is_windows() then
     table.insert(result, "\r\n")
   else
     table.insert(result, cr)
